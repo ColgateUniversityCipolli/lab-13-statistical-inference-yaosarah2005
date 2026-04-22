@@ -114,8 +114,31 @@ That is, the unit of measure is the syllable as measured on six birds, and the m
 ## Part a
 Using the `pwr` package for \texttt{R} [@pwr], conduct a power analysis. How many observations would the researchers need to detect a moderate-to-large effect ($d=0.65$) when using $\alpha=0.05$ and default power (0.80) for a two-sided one sample $t$ test.
 
+**Solution**
+
+```{r}
+library(pwr)
+pwr.t.test(d = 0.65, power = 0.80,alternative = "two.sided", type="one.sample")
+```
+
+21 observations needed
+
 ## Part b
 Click the link to go to the paper. Find the source data for Figure 2. Download the Excel file. Describe what you needed to do to collect the data for Figure 2(g). Note that you only need the `closer_vals` and `further_vals`. Ensure to `mutate()` the data to get a difference (e.g., `closer_vals - further_vals`).
+
+**Solution**
+
+```{r}
+library(readxl)
+further <- read_excel("data.xlsx", sheet = "g.Farther_vals", col_names = FALSE)
+closer <- read_excel("data.xlsx", sheet = "g.Closer_vals", col_names = FALSE)
+data <- tibble(closer_vals = closer$...1,
+               further_vals = further$...1)
+data <- data |>
+  mutate(difference = closer_vals - further_vals)
+```
+
+We need to read the excel file and get the sheet named 'Fartuer_vals' and 'Closer_vals'. Stored the data and combine it into a new data frame, and use `mutate()` to add the column of difference.
 
 ## Part c
 Summarize the data.
@@ -124,6 +147,122 @@ Summarize the data.
 * Summarize the closer data. Do the data suggest that dopamine in the brains of young zebra finches increases when they sing closer to their adult song?
 * Summarize the paired differences. Do the data suggest that there is a difference between dopamine in the brains of young zebra finches when they sing further away compared to closer to their adult song?
 * **Optional Challenge** Can you reproduce Figure 2(g)? Note that the you can use \texttt{geom\_errorbar()} to plot the range created by adding the mean $\pm$ one standard deviation.
+
+**Solution**
+
+```{r}
+further.summary <- data |>
+  summarize(
+    mean = mean(further_vals),
+    sd = sd(further_vals),
+    median = median(further_vals),
+    IQR = IQR(further_vals),
+    skew = e1071::skewness(further_vals),
+    e.kurt = e1071::kurtosis(further_vals)
+  )
+
+closer.summary <- data |>
+  summarize(
+    mean = mean(closer_vals),
+    sd = sd(closer_vals),
+    median = median(closer_vals),
+    IQR = IQR(closer_vals),
+    skew = e1071::skewness(closer_vals),
+    e.kurt = e1071::kurtosis(closer_vals)
+  )
+
+difference.summary <- data |>
+  summarize(
+    mean = mean(difference),
+    sd = sd(difference),
+    median = median(difference),
+    IQR = IQR(difference),
+    skew = e1071::skewness(difference),
+    e.kurt = e1071::kurtosis(difference)
+  )
+```
+
+```{r}
+#| label: table1
+#| tbl-cap: "Summary table of the further data"
+#| tbl-align: "center"
+#| echo: false
+further.summary |>
+  knitr::kable(digits = 2)
+```
+
+The mean and median are both below zero, which suggests the dopamine in the brains may decreases when they sing further away.
+
+```{r}
+#| label: table2
+#| tbl-cap: "Summary table of the closer data"
+#| tbl-align: "center"
+#| echo: false
+closer.summary |>
+  knitr::kable(digits = 2)
+```
+
+The mean and median are both above zero, which suggests the dopamine in the brains may decreases when they sing further away.
+
+```{r}
+#| label: table3
+#| tbl-cap: "Summary table of the difference data"
+#| tbl-align: "center"
+#| echo: false
+difference.summary |>
+  knitr::kable(digits = 2)
+```
+
+The mean and median of the difference are greater than 0, which suggests it is possible that there is a difference between dopamine in the brains of young zebra finches.
+
+```{r}
+#| label: figure2(g)
+#| fig-cap: "Recreating Figure 2(g)"
+#| fig-width: 5
+#| fig-height: 3
+#| scale: "80%"
+#| fig-align: "center"
+#| size: scriptsize
+
+summary <- bind_rows(further.summary, closer.summary) 
+summary <- summary |>
+  mutate(condition = c('Further','Closer'))
+
+dgraph <- data |>
+  mutate(id = 1:25) |>
+  pivot_longer(cols = c(further_vals, closer_vals),
+               names_to = "condition",
+               values_to = "value")  |>
+  mutate(condition = recode(condition,
+                            "further_vals" = "Further",
+                            "closer_vals" = "Closer"))
+
+ggplot() +
+  geom_line(data = dgraph,
+            aes(x = factor(condition, levels = c('Further','Closer')), y = value, group = id),
+            color = "grey70", alpha = 0.7, linewidth = 0.5) +
+  
+  geom_point(data = dgraph,
+             aes(x = factor(condition, levels = c('Further','Closer')), y = value, color = condition), shape = 1,
+             size = 2) +
+  
+  geom_errorbar(data = summary,
+                aes(x = factor(condition, levels = c('Further','Closer')),
+                    ymin = mean - sd,
+                    ymax = mean + sd),
+                width = 0.1,
+                linewidth = 1,
+                color = "black") +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "grey60") +
+  geom_line(data = summary,
+            aes(x = factor(condition, levels = c('Further','Closer')),
+                y = mean, group = 1),
+            color = "black",
+            linewidth = 1) +
+
+  theme_bw() +
+  labs(y = expression(Delta*F/F*"(%)"), x = NULL)
+```
 
 ## Part d
 Conduct the inferences they do in the paper. Make sure to report the results a little more comprehensively -- that is your parenthetical should look something like: ($t=23.99$, $p<0.0001$; $g=1.34$; 95% CI: 4.43, 4.60). Ensure to verify any conditions for use.\
