@@ -60,6 +60,7 @@ knitr::knit_hooks$set(chunk = function(x, options) {
 #| include: false
 library(tidyverse)
 library(patchwork)
+library(effectsize)
 ```
 
 # Remaining Portfolio Work!
@@ -270,10 +271,43 @@ Conduct the inferences they do in the paper. Make sure to report the results a l
 
 * "The close responses differed significantly from 0 ($p=1.63 \times 10^{-8}$).''\
 **Note**: Use the appropriate one-sided test.
+
+**Solution**
+
+($t=9.16$, $p=1.33 \times 10^{-9}$; $g=1.77$; 95% CI: 0.138, 0.219)
+
+```{r}
+t.test(x=data$closer_vals, mu=0, alternative="two.sided")$conf.int
+t.test(x=data$closer_vals, mu=0, alternative="greater")
+hedges_g(x=data$closer_vals, mu = 0)
+```
+
+
 * "The far responses differed significantly from 0 ($p=5.17 \times 10^{-8}$).''\
 **Note**: Use the appropriate one-sided test.
+
+**Solution**
+
+($t=-7.92$, $p=1.87 \times 10^{-8}$; $g=-1.53$; 95% CI: -0.268, -0.157)
+
+```{r}
+t.test(x=data$further_vals, mu=0, alternative="two.sided")$conf.int
+t.test(x=data$further_vals, mu=0, alternative="less")
+hedges_g(x=data$further_vals, mu = 0)
+```
+
 * "The difference between populations was significant ($p=1.04 \times10^{-8}$).''\
 **Note**: Use the two-sided test.
+
+**Solution**
+
+($t=9.1428$, $p=2.75 \times 10^{-9}$; $g=1.77$; 95% CI: 0.303, 0.480)
+
+```{r}
+t.test(x=data$difference, mu=0, alternative="two.sided")
+hedges_g(x=data$difference, mu = 0)
+```
+
 
 ## Part e 
 
@@ -283,4 +317,152 @@ to highlight the rejection region and the $p$-value. Additionally, add the
 resampling distribution for $T$ to the chart to demonstrate any differences 
 between the null distribution and the distribution suggested by the data.
 
+**Solution**
 
+The close responses differed significantly from 0
+
+```{r}
+#| label: close response
+#| fig-cap: "Hypothesis test for the close responses differed significantly from 0"
+#| fig-width: 5
+#| fig-height: 3
+#| scale: "80%"
+#| fig-align: "center"
+#| size: scriptsize
+
+ggdat <- tibble(t = seq(-4, 15, length.out=1000)) |>
+  mutate(pdf.h0 = dt(x=t, df=24))
+
+s <- sd(data$closer_vals)
+# create vector of axis ticks
+t.breaks <- seq(-24, 24, 4)
+xbar.breaks <- round(t.breaks * (s/sqrt(25)), 2)
+
+# resampling
+ts <- rep(NA, 1000)
+s <- sd(data$closer_vals)
+n <- 25
+for(i in 1:1000){
+   curr.sample <- sample(data$closer_vals, size=n, replace=T)
+   ts[i] <- (mean(curr.sample))/(s/sqrt(n))
+  }
+
+t.critical <- qt(1-0.05, df=24)
+t.stat = 9.16
+
+ggplot(ggdat) +
+  geom_line(aes(x=t, y=pdf.h0))+ # plot distribution of T under H0
+  stat_density(data=tibble(t=ts), aes(x=t), color="grey", geom="line")+
+  geom_hline(yintercept=0) +
+  geom_ribbon(data=ggdat |> filter(t >= t.critical),
+              aes(x=t, ymin=0, ymax= pdf.h0, fill="Rejection Region"), alpha=0.3) +
+  geom_ribbon(data=ggdat |> filter(t >= t.stat),
+              aes(x=t, ymin=0, ymax= pdf.h0, fill="P value"), alpha=0.3) +
+  # Plot observation
+  geom_point(data=tibble(x=t.stat, y=0),
+             aes(x=x, y=y), color="red", size=2) +
+  theme_bw()+
+  # Specify axis ticks
+  scale_x_continuous("t", breaks=t.breaks, sec.axis = sec_axis(~., bquote(bar(x)),
+                     breaks=t.breaks, labels=xbar.breaks)) +
+  labs(y="Density")
+```
+
+
+The far responses differed significantly from 0
+```{r}
+#| label: far response
+#| fig-cap: "Hypothesis test for the far responses differed significantly from 0"
+#| fig-width: 5
+#| fig-height: 3
+#| scale: "80%"
+#| fig-align: "center"
+#| size: scriptsize
+
+ggdat <- tibble(t = seq(-15, 4, length.out=1000)) |>
+  mutate(pdf.h0 = dt(x=t, df=24))
+
+s <- sd(data$closer_vals)
+# create vector of axis ticks
+t.breaks <- seq(-24, 24, 4)
+xbar.breaks <- round(t.breaks * (s/sqrt(25)), 2)
+
+# resampling
+ts <- rep(NA, 1000)
+s <- sd(data$further_vals)
+n <- 25
+for(i in 1:1000){
+   curr.sample <- sample(data$further_vals, size=n, replace=T)
+   ts[i] <- (mean(curr.sample))/(s/sqrt(n))
+  }
+
+t.critical <- qt(0.05, df=24)
+t.stat = -7.92
+
+ggplot(ggdat) +
+  geom_line(aes(x=t, y=pdf.h0))+ # plot distribution of T under H0
+  stat_density(data=tibble(t=ts), aes(x=t), color="grey", geom="line")+
+  geom_hline(yintercept=0) +
+  geom_ribbon(data=ggdat |> filter(t <= t.critical),
+              aes(x=t, ymin=0, ymax= pdf.h0, fill="Rejection Region"), alpha=0.3) +
+  geom_ribbon(data=ggdat |> filter(t <= t.stat),
+              aes(x=t, ymin=0, ymax= pdf.h0, fill="P value"), alpha=0.3) +
+  # Plot observation
+  geom_point(data=tibble(x=t.stat, y=0),
+             aes(x=x, y=y), color="red", size=2) +
+  theme_bw()+
+  # Specify axis ticks
+  scale_x_continuous("t", breaks=t.breaks, sec.axis = sec_axis(~., bquote(bar(x)),
+                     breaks=t.breaks, labels=xbar.breaks)) +
+  labs(y="Density")
+```
+
+```{r}
+#| label: difference
+#| fig-cap: "Hypothesis test for the difference between populations is significant"
+#| fig-width: 5
+#| fig-height: 3
+#| scale: "80%"
+#| fig-align: "center"
+#| size: scriptsize
+
+ggdat <- tibble(t = seq(-6, 10, length.out=1000)) |>
+  mutate(pdf.h0 = dt(x=t, df=24))
+
+s <- sd(data$difference)
+# create vector of axis ticks
+t.breaks <- seq(-24, 24, 4)
+xbar.breaks <- round(t.breaks * (s/sqrt(25)), 2)
+
+# resampling
+ts <- rep(NA, 1000)
+s <- sd(data$difference)
+n <- 25
+for(i in 1:1000){
+   curr.sample <- sample(data$difference, size=n, replace=T)
+   ts[i] <- (mean(curr.sample))/(s/sqrt(n))
+  }
+
+t.critical1 <- qt(0.975, df=24)
+t.critical2 <- qt(0.025, df=24)
+t.stat = 9.1428
+
+ggplot(ggdat) +
+  geom_line(aes(x=t, y=pdf.h0))+ # plot distribution of T under H0
+  stat_density(data=tibble(t=ts), aes(x=t), color="grey", geom="line")+
+  geom_hline(yintercept=0) +
+  geom_ribbon(data=ggdat |> filter(t <= t.critical2),
+              aes(x=t, ymin=0, ymax= pdf.h0, fill="Rejection Region"), alpha=0.3) +
+  geom_ribbon(data=ggdat |> filter(t >= t.critical1),
+              aes(x=t, ymin=0, ymax= pdf.h0, fill="Rejection Region"), alpha=0.3) +
+  geom_ribbon(data=ggdat |> filter(t >= t.stat | t <= -t.stat),
+              aes(x=t, ymin=0, ymax= pdf.h0, fill="P value"), alpha=0.3) +
+  # Plot observation
+  geom_point(data=tibble(x=t.stat, y=0),
+             aes(x=x, y=y), color="red", size=2) +
+  theme_bw()+
+  # Specify axis ticks
+  scale_x_continuous("t", breaks=t.breaks, sec.axis = sec_axis(~., bquote(bar(x)),
+                     breaks=t.breaks, labels=xbar.breaks)) +
+  labs(y="Density")
+```
