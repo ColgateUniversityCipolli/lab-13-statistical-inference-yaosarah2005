@@ -455,7 +455,9 @@ ggplot(ggdat) +
               aes(x=t, ymin=0, ymax= pdf.h0, fill="Rejection Region"), alpha=0.3) +
   geom_ribbon(data=ggdat |> filter(t >= t.critical1),
               aes(x=t, ymin=0, ymax= pdf.h0, fill="Rejection Region"), alpha=0.3) +
-  geom_ribbon(data=ggdat |> filter(t >= t.stat | t <= -t.stat),
+  geom_ribbon(data=ggdat |> filter(t >= t.stat),
+              aes(x=t, ymin=0, ymax= pdf.h0, fill="P value"), alpha=0.3) +
+  geom_ribbon(data=ggdat |> filter(t <= -t.stat),
               aes(x=t, ymin=0, ymax= pdf.h0, fill="P value"), alpha=0.3) +
   # Plot observation
   geom_point(data=tibble(x=t.stat, y=0),
