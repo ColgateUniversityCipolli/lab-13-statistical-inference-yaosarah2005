@@ -139,7 +139,7 @@ data <- data |>
   mutate(difference = closer_vals - further_vals)
 ```
 
-We need to read the excel file and get the sheet named 'Fartuer_vals' and 'Closer_vals'. Stored the data and combine it into a new data frame, and use `mutate()` to add the column of difference.
+We need to read the excel file and get the sheet named 'Farther_vals' and 'Closer_vals'. Stored the data and combine it into a new data frame, and use `mutate()` to add the column of difference.
 
 ## Part c
 Summarize the data.
@@ -203,7 +203,7 @@ closer.summary |>
   knitr::kable(digits = 2)
 ```
 
-The mean and median are both above zero, which suggests the dopamine in the brains may decreases when they sing further away.
+The mean and median are both above zero, which suggests the dopamine in the brains may increase when they sing closer to their adult song.
 
 ```{r}
 #| label: table3
@@ -382,7 +382,7 @@ The far responses differed significantly from 0
 ggdat <- tibble(t = seq(-15, 4, length.out=1000)) |>
   mutate(pdf.h0 = dt(x=t, df=24))
 
-s <- sd(data$closer_vals)
+s <- sd(data$further_vals)
 # create vector of axis ticks
 t.breaks <- seq(-24, 24, 4)
 xbar.breaks <- round(t.breaks * (s/sqrt(25)), 2)
@@ -451,13 +451,13 @@ ggplot(ggdat) +
   geom_line(aes(x=t, y=pdf.h0))+ # plot distribution of T under H0
   stat_density(data=tibble(t=ts), aes(x=t), color="grey", geom="line")+
   geom_hline(yintercept=0) +
-  geom_ribbon(data=ggdat |> filter(t <= t.critical2),
+  geom_ribbon(data=ggdat |> filter(t <= t.critical2), # rejection region
               aes(x=t, ymin=0, ymax= pdf.h0, fill="Rejection Region"), alpha=0.3) +
-  geom_ribbon(data=ggdat |> filter(t >= t.critical1),
+  geom_ribbon(data=ggdat |> filter(t >= t.critical1), # rejection region
               aes(x=t, ymin=0, ymax= pdf.h0, fill="Rejection Region"), alpha=0.3) +
-  geom_ribbon(data=ggdat |> filter(t >= t.stat),
+  geom_ribbon(data=ggdat |> filter(t >= t.stat), # P value
               aes(x=t, ymin=0, ymax= pdf.h0, fill="P value"), alpha=0.3) +
-  geom_ribbon(data=ggdat |> filter(t <= -t.stat),
+  geom_ribbon(data=ggdat |> filter(t <= -t.stat), # P value
               aes(x=t, ymin=0, ymax= pdf.h0, fill="P value"), alpha=0.3) +
   # Plot observation
   geom_point(data=tibble(x=t.stat, y=0),
